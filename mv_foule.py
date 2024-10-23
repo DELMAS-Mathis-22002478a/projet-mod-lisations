@@ -1,54 +1,29 @@
 import numpy as np
 import random
-import tkinter as tk
-import heapq
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
-# Dimensions de la grille
-width = 15
-height = 15
-cell_size = 20  # Taille de chaque cellule dans l'interface graphique
+width = 20
+height = 20
 
-# États des cellules
+
 EMPTY = 0
 PERSON = 1
 OBSTACLE = 2
 EXIT = 3
 
-# Initialisation de la grille
 grid = np.zeros((height, width), dtype=int)
 
-# Position de la sortie (on choisit le coin inférieur droit pour cet exemple)
-exit_position = (height - 1, width - 8)
+exit_position = (height - 1, width - 1)
 grid[exit_position] = EXIT
 
-# Matrice des obstacles
-obstacle_matrix = np.array([
-    [0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 0, 0, 0, 0],
-    [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-    [0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0]
-])
 
-# Placer les obstacles
-for i in range(height):
-    for j in range(width):
-        if obstacle_matrix[i, j] == 2:
-            # On évite de placer un obstacle sur la sortie
-            if (i, j) != exit_position:
-                grid[i, j] = OBSTACLE
 
-# Ajouter des personnes aléatoirement dans la grille
+for _ in range(20):  # On place 20 obstacles
+    x, y = random.randint(0, height - 1), random.randint(0, width - 1)
+    grid[x, y] = OBSTACLE
+
+
 for _ in range(30):  # On place 30 personnes
     while True:
         x, y = random.randint(0, height - 1), random.randint(0, width - 1)
@@ -56,112 +31,60 @@ for _ in range(30):  # On place 30 personnes
             grid[x, y] = PERSON
             break
 
-# Fonction pour calculer la distance de Manhattan
-def manhattan_distance(x1, y1, x2, y2):
-    return abs(x1 - x2) + abs(y1 - y2)
+def distance_manhattan(x1,x2,y1,y2):
+    result = abs(x2-x1) + abs(y2-y1)
+    return result
 
-# Fonction pour trouver le chemin le plus court avec A*
-def a_star_search(grid, start, goal):
-    def heuristic(a, b):
-        return manhattan_distance(a[0], a[1], b[0], b[1])
-
-    neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    close_set = set()
-    came_from = {}
-    gscore = {start: 0}
-    fscore = {start: heuristic(start, goal)}
-    oheap = []
-
-    heapq.heappush(oheap, (fscore[start], start))
-
-    while oheap:
-        current = heapq.heappop(oheap)[1]
-
-        if current == goal:
-            data = []
-            while current in came_from:
-                data.append(current)
-                current = came_from[current]
-            return data
-
-        close_set.add(current)
-        for i, j in neighbors:
-            neighbor = current[0] + i, current[1] + j
-            tentative_g_score = gscore[current] + 1
-            if 0 <= neighbor[0] < grid.shape[0]:
-                if 0 <= neighbor[1] < grid.shape[1]:
-                    if grid[neighbor[0]][neighbor[1]] == OBSTACLE:
-                        tentative_g_score += 10  # Penalize obstacles
-                    if neighbor in close_set:
-                        continue
-                    if tentative_g_score < gscore.get(neighbor, float('inf')):
-                        came_from[neighbor] = current
-                        gscore[neighbor] = tentative_g_score
-                        fscore[neighbor] = tentative_g_score + heuristic(neighbor, goal)
-                        heapq.heappush(oheap, (fscore[neighbor], neighbor))
-
-    return False
-
-# Fonction pour déplacer les personnes
 def move_people(grid, exit_position):
-    new_grid = np.copy(grid)  # Crée une nouvelle grille pour enregistrer les déplacements
-    person_exited = False  # Flag to track if a person has exited
-
+    new_grid = np.copy(grid)
     for i in range(height):
         for j in range(width):
             if grid[i, j] == PERSON:
-                path = a_star_search(grid, (i, j), exit_position)
-                if path:
-                    next_move = path[-1]
-                    new_grid[i, j] = EMPTY
-                    if next_move == exit_position:
-                        if not person_exited:  # Allow only one person to exit
-                            person_exited = True
-                    else:
-                        new_grid[next_move[0], next_move[1]] = PERSON
+                exit_position = (i, j)
+                move_distance = distance_manhattan(i, j, exit_position[0], exit_position[1])
+                for wi, hj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    ni, nj = i + wi, j + hj
+                    if 0 <= ni < height and 0 <= nj < width and grid[ni, nj] == EMPTY:
+                        new_distance = distance_manhattan(ni,nj,exit_position[0], exit_position[1])
+                        if new_distance < move_distance:
+                            exit_position = (ni, nj)
+                            move_distance = new_distance
+            if exit_position != (i,j):
+                new_grid[i, j] = EMPTY
+                new_grid[exit_position[0], exit_position[1]] = PERSON
 
     return new_grid
+    
+def print_grid(grid):
+    for row in grid:
+        print(' '.join(str(cell) for cell in row))
 
-# Fonction pour dessiner la grille dans l'interface tkinter
-def draw_grid(canvas, grid):
-    for i in range(height):
-        for j in range(width):
-            x1 = j * cell_size
-            y1 = i * cell_size
-            x2 = x1 + cell_size
-            y2 = y1 + cell_size
 
-            if grid[i, j] == EMPTY:
-                color = "white"
-            elif grid[i, j] == PERSON:
-                color = "blue"
-            elif grid[i, j] == OBSTACLE:
-                color = "black"
-            elif grid[i, j] == EXIT:
-                color = "green"
+print("Grille initiale :")
+print_grid(grid)
 
-            canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="gray")
-
-# Fonction pour mettre à jour la simulation
-def update_simulation():
-    global grid
+for step in range(10):
+    print(f"\nÉtape {step + 1} :")
     grid = move_people(grid, exit_position)
-    canvas.delete("all")  # Efface le contenu actuel du canvas
-    draw_grid(canvas, grid)
-    root.after(500, update_simulation)  # Appelle cette fonction après 500 ms pour créer une animation
+    print_grid(grid)
+    
+# Fonction pour animer la simulation
+def animate_simulation():
+    fig, ax = plt.subplots()
+    cmap = plt.cm.get_cmap('viridis', 4)
+    img = ax.imshow(grid, cmap=cmap, vmin=0, vmax=3)
+    ax.set_xticks([])
+    ax.set_yticks([])
 
-# Création de la fenêtre tkinter
-root = tk.Tk()
-root.title("Mouvement de foule")
+    def update(frame):
+        global grid
+        grid = move_people(grid, exit_position)
+        img.set_array(grid)
+        return [img]
 
-canvas = tk.Canvas(root, width=width * cell_size, height=height * cell_size)
-canvas.pack()
+    ani = animation.FuncAnimation(fig, update, frames=10, interval=500, blit=True)
+    plt.colorbar(img, ticks=[0, 1, 2, 3], label='Cell States')
+    plt.show()
 
-# Dessiner la grille initiale
-draw_grid(canvas, grid)
-
-# Démarrer la simulation
-root.after(500, update_simulation)  # Lancer la première mise à jour après 500 ms
-
-# Lancer la boucle principale de tkinter
-root.mainloop()
+# Afficher la simulation animée
+animate_simulation()
