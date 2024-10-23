@@ -1,7 +1,6 @@
 import numpy as np
 import random
 import tkinter as tk
-import heapq
 
 # Dimensions de la grille
 width = 15
@@ -43,7 +42,7 @@ obstacle_matrix = np.array([
 # Placer les obstacles
 for i in range(height):
     for j in range(width):
-        if obstacle_matrix[i, j] == 2:
+        if obstacle_matrix[i, j] == 2:  # Changez cette ligne
             # On évite de placer un obstacle sur la sortie
             if (i, j) != exit_position:
                 grid[i, j] = OBSTACLE
@@ -56,72 +55,52 @@ for _ in range(30):  # On place 30 personnes
             grid[x, y] = PERSON
             break
 
-# Fonction pour calculer la distance de Manhattan
-def manhattan_distance(x1, y1, x2, y2):
+def distance_manhattan(x1, y1, x2, y2):
     return abs(x1 - x2) + abs(y1 - y2)
 
-# Fonction pour trouver le chemin le plus court avec A*
-def a_star_search(grid, start, goal):
-    def heuristic(a, b):
-        return manhattan_distance(a[0], a[1], b[0], b[1])
 
-    neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    close_set = set()
-    came_from = {}
-    gscore = {start: 0}
-    fscore = {start: heuristic(start, goal)}
-    oheap = []
+def move_person(grid, start, end):
+    new_grid = np.copy(grid)
+    person_exited = False
 
-    heapq.heappush(oheap, (fscore[start], start))
-
-    while oheap:
-        current = heapq.heappop(oheap)[1]
-
-        if current == goal:
-            data = []
-            while current in came_from:
-                data.append(current)
-                current = came_from[current]
-            return data
-
-        close_set.add(current)
-        for i, j in neighbors:
-            neighbor = current[0] + i, current[1] + j
-            tentative_g_score = gscore[current] + 1
-            if 0 <= neighbor[0] < grid.shape[0]:
-                if 0 <= neighbor[1] < grid.shape[1]:
-                    if grid[neighbor[0]][neighbor[1]] == OBSTACLE:
-                        tentative_g_score += 10  # Penalize obstacles
-                    if neighbor in close_set:
-                        continue
-                    if tentative_g_score < gscore.get(neighbor, float('inf')):
-                        came_from[neighbor] = current
-                        gscore[neighbor] = tentative_g_score
-                        fscore[neighbor] = tentative_g_score + heuristic(neighbor, goal)
-                        heapq.heappush(oheap, (fscore[neighbor], neighbor))
-
-    return False
-
-# Fonction pour déplacer les personnes
-def move_people(grid, exit_position):
-    new_grid = np.copy(grid)  # Crée une nouvelle grille pour enregistrer les déplacements
-    person_exited = False  # Flag to track if a person has exited
-
-    # Parcours de chaque cellule de la grille
     for i in range(height):
         for j in range(width):
             if grid[i, j] == PERSON:
-                path = a_star_search(grid, (i, j), exit_position)
-                if path:
-                    next_move = path[-1]
+                # On vérifie si la personne est déjà à la sortie
+                if (i, j) == end:
+                    person_exited = True
                     new_grid[i, j] = EMPTY
-                    if next_move == exit_position:
-                        if not person_exited:  # Allow only one person to exit
-                            person_exited = True
-                    else:
-                        new_grid[next_move[0], next_move[1]] = PERSON
+                else:
+                    # On calcule les distances de Manhattan entre la personne et les cases voisines
+                    distances = {
+                        'up': distance_manhattan(i - 1, j, end[0], end[1]),
+                        'down': distance_manhattan(i + 1, j, end[0], end[1]),
+                        'left': distance_manhattan(i, j - 1, end[0], end[1]),
+                        'right': distance_manhattan(i, j + 1, end[0], end[1])
 
-    return new_grid
+                    }
+                    # On trie les distances pour obtenir la direction la plus proche de la sortie
+                    sorted_distances = sorted(distances, key=lambda x: distances[x])
+
+                    # On vérifie si la case voisine est vide et qu'il n'y a pas d'obstacle
+                    for direction in sorted_distances:
+                        new_i, new_j = i, j
+                        if direction == 'up':
+                            new_i -= 1
+                        elif direction == 'down':
+                            new_i += 1
+                        elif direction == 'left':
+                            new_j -= 1
+                        elif direction == 'right':
+                            new_j += 1
+
+                        if 0 <= new_i < height and 0 <= new_j < width and grid[new_i, new_j] == EMPTY:
+                            new_grid[i, j] = EMPTY
+                            new_grid[new_i, new_j] = PERSON
+                            break
+
+    return new_grid, person_exited
+
 
 # Fonction pour dessiner la grille dans l'interface tkinter
 def draw_grid(canvas, grid):
@@ -143,12 +122,14 @@ def draw_grid(canvas, grid):
 
             canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="gray")
 
+
 # Fonction pour mettre à jour la simulation
 def update_simulation():
     global grid
-    grid = move_people(grid, exit_position)
-    canvas.delete("all")  # Efface le contenu actuel du canvas
-    draw_grid(canvas, grid)
+
+    canvas.delete("all")
+    draw_grid(canvas, grid),
+    grid, person_exited = move_person(grid, (0, 0), exit_position)
     root.after(500, update_simulation)  # Appelle cette fonction après 500 ms pour créer une animation
 
 # Création de la fenêtre tkinter
@@ -158,11 +139,11 @@ root.title("Mouvement de foule")
 canvas = tk.Canvas(root, width=width * cell_size, height=height * cell_size)
 canvas.pack()
 
-# Dessiner la grille initiale
+
 draw_grid(canvas, grid)
 
 # Démarrer la simulation
-root.after(500, update_simulation)  # Lancer la première mise à jour après 500 ms
+root.after(500, update_simulation)
 
 # Lancer la boucle principale de tkinter
 root.mainloop()
