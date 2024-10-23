@@ -79,7 +79,7 @@ def draw_grid(canvas, grid):
 # Fonction pour mettre à jour la simulation
 def update_simulation():
     global grid
-    canvas.delete("all")  # Efface le contenu actuel du canvas
+    canvas.delete("all")
     draw_grid(canvas, grid)
     root.after(500, update_simulation)  # Appelle cette fonction après 500 ms pour créer une animation
 
@@ -90,11 +90,11 @@ root.title("Mouvement de foule")
 canvas = tk.Canvas(root, width=width * cell_size, height=height * cell_size)
 canvas.pack()
 
-# Dessiner la grille initiale
+
 draw_grid(canvas, grid)
 
 # Démarrer la simulation
-root.after(500, update_simulation)  # Lancer la première mise à jour après 500 ms
+root.after(500, update_simulation)
 
 # Lancer la boucle principale de tkinter
 root.mainloop()
