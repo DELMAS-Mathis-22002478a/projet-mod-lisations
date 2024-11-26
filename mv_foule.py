@@ -44,15 +44,15 @@ obstacle_matrix = np.array([
 for i in range(height):
     for j in range(width):
         if obstacle_matrix[i, j] == 2:
-            # On évite de placer un obstacle sur la sortie
+
             if (i, j) != exit_position:
                 grid[i, j] = OBSTACLE
 
 # Ajouter des personnes aléatoirement dans la grille
-for _ in range(30):  # On place 30 personnes
+for _ in range(30):
     while True:
         x, y = random.randint(0, height - 1), random.randint(0, width - 1)
-        if grid[x, y] == EMPTY:  # On vérifie que la cellule est vide
+        if grid[x, y] == EMPTY:
             grid[x, y] = PERSON
             break
 
@@ -91,7 +91,7 @@ def a_star_search(grid, start, goal):
             if 0 <= neighbor[0] < grid.shape[0]:
                 if 0 <= neighbor[1] < grid.shape[1]:
                     if grid[neighbor[0]][neighbor[1]] == OBSTACLE:
-                        tentative_g_score += 10  # Penalize obstacles
+                        tentative_g_score += 10
                     if neighbor in close_set:
                         continue
                     if tentative_g_score < gscore.get(neighbor, float('inf')):
@@ -104,8 +104,8 @@ def a_star_search(grid, start, goal):
 
 # Fonction pour déplacer les personnes
 def move_people(grid, exit_position):
-    new_grid = np.copy(grid)  # Crée une nouvelle grille pour enregistrer les déplacements
-    person_exited = False  # Flag to track if a person has exited
+    new_grid = np.copy(grid)
+    person_exited = False
 
     # Parcours de chaque cellule de la grille
     for i in range(height):
@@ -116,7 +116,7 @@ def move_people(grid, exit_position):
                     next_move = path[-1]
                     new_grid[i, j] = EMPTY
                     if next_move == exit_position:
-                        if not person_exited:  # Allow only one person to exit
+                        if not person_exited:
                             person_exited = True
                     else:
                         new_grid[next_move[0], next_move[1]] = PERSON
@@ -147,9 +147,9 @@ def draw_grid(canvas, grid):
 def update_simulation():
     global grid
     grid = move_people(grid, exit_position)
-    canvas.delete("all")  # Efface le contenu actuel du canvas
+    canvas.delete("all")
     draw_grid(canvas, grid)
-    root.after(500, update_simulation)  # Appelle cette fonction après 500 ms pour créer une animation
+    root.after(500, update_simulation)
 
 # Création de la fenêtre tkinter
 root = tk.Tk()
