@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import tkinter as tk
+import heapq
 
 # Dimensions de la grille
 width = 15
@@ -61,6 +62,36 @@ for i in range(30):  # On place 30 personnes
 def distance_manhattan(x1, y1, x2, y2):
     return abs(x1 - x2) + abs(y1 - y2)
 
+def a_star(grid, start, end):
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: distance_manhattan(start[0], start[1], end[0], end[1])}
+
+    while open_set:
+        _, current = heapq.heappop(open_set)
+
+        if current == end:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.reverse()
+            return path
+
+        neighbors = [(current[0] + dx, current[1] + dy) for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]]
+        for neighbor in neighbors:
+            if 0 <= neighbor[0] < height and 0 <= neighbor[1] < width and grid[neighbor[0], neighbor[1]] != OBSTACLE:
+                tentative_g_score = g_score[current] + 1
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + distance_manhattan(neighbor[0], neighbor[1], end[0], end[1])
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+    return []
+
 def move_person(grid, end):
     global nb, exit_count
     new_grid = np.copy(grid)
@@ -69,33 +100,13 @@ def move_person(grid, end):
     for i in range(height):
         for j in range(width):
             if grid[i, j] == PERSON:
-                distances = {
-                    'up': distance_manhattan(i - 1, j, end[0], end[1]),
-                    'down': distance_manhattan(i + 1, j, end[0], end[1]),
-                    'left': distance_manhattan(i, j - 1, end[0], end[1]),
-                    'right': distance_manhattan(i, j + 1, end[0], end[1])
-                }
-
-                sorted_distances = sorted(distances, key=lambda x: distances[x])
-
-                for direction in sorted_distances:
-                    new_i, new_j = i, j
-                    if direction == 'up':
-                        new_i -= 1
-                    elif direction == 'down':
-                        new_i += 1
-                    elif direction == 'left':
-                        new_j -= 1
-                    elif direction == 'right':
-                        new_j += 1
-
-                    if 0 <= new_i < height and 0 <= new_j < width:
-                        if grid[new_i, new_j] == EMPTY:
-                            moves.append((i, j, new_i, new_j))
-                            break
-                        elif grid[new_i, new_j] == EXIT:
-                            moves.append((i, j, new_i, new_j))
-                            break
+                path = a_star(grid, (i, j), end)
+                if path:
+                    new_i, new_j = path[0]
+                    if grid[new_i, new_j] == EMPTY:
+                        moves.append((i, j, new_i, new_j))
+                    elif grid[new_i, new_j] == EXIT:
+                        moves.append((i, j, new_i, new_j))
 
     for i, j, new_i, new_j in moves:
         if new_grid[new_i, new_j] == EMPTY:
@@ -127,17 +138,15 @@ def draw_grid(canvas, grid):
 
             canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="gray")
 
-
 # Fonction pour mettre à jour la simulation
 def update_simulation():
     global grid, exit_count
 
     canvas.delete("all")
     draw_grid(canvas, grid)
-    grid, person_exited = move_person(grid,  exit_position)
+    grid, person_exited = move_person(grid, exit_position)
     exit_label.config(text=f"Personne sortie: {exit_count}")
     root.after(1000, update_simulation)
-
 
 # Création de la fenêtre tkinter
 root = tk.Tk()
