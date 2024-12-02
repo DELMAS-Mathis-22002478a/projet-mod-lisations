@@ -2,6 +2,7 @@ import numpy as np
 import random
 import tkinter as tk
 
+
 # Dimensions de la grille
 width = 15
 height = 15
@@ -12,6 +13,7 @@ EMPTY = 0
 PERSON = 1
 OBSTACLE = 2
 EXIT = 3
+nb = 0
 
 # Initialisation de la grille
 grid = np.zeros((height, width), dtype=int)
@@ -22,21 +24,21 @@ grid[exit_position] = EXIT
 
 # Matrice des obstacles
 obstacle_matrix = np.array([
-    [0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 0, 0, 0, 0],
-    [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-    [0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0]
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 0, 0, 2, 2, 2, 0, 0, 2, 2, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 0, 0, 2, 2, 2, 0, 0, 2, 2, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 0, 0, 2, 2, 2, 0, 0, 2, 2, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 0, 0, 2, 2, 2, 0, 0, 2, 2, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ])
 
 # Placer les obstacles
@@ -48,29 +50,25 @@ for i in range(height):
                 grid[i, j] = OBSTACLE
 
 # Ajouter des personnes aléatoirement dans la grille
-for _ in range(30):  # On place 30 personnes
+for i in range(30):  # On place 30 personnes
     while True:
-        x, y = random.randint(0, height - 1), random.randint(0, width - 1)
+        x, y = random.randint(0, 10 - 1), random.randint(0, 10 - 1)
         if grid[x, y] == EMPTY:  # On vérifie que la cellule est vide
             grid[x, y] = PERSON
+            nb = i
             break
 
 def distance_manhattan(x1, y1, x2, y2):
     return abs(x1 - x2) + abs(y1 - y2)
 
 
-def move_person(grid, start, end):
+def move_person(grid, end):
+    global nb
     new_grid = np.copy(grid)
     person_exited = False
-
     for i in range(height):
         for j in range(width):
             if grid[i, j] == PERSON:
-                # On vérifie si la personne est déjà à la sortie
-                if (i, j) == end:
-                    person_exited = True
-                    new_grid[i, j] = EMPTY
-                else:
                     # On calcule les distances de Manhattan entre la personne et les cases voisines
                     distances = {
                         'up': distance_manhattan(i - 1, j, end[0], end[1]),
@@ -82,22 +80,44 @@ def move_person(grid, start, end):
                     # On trie les distances pour obtenir la direction la plus proche de la sortie
                     sorted_distances = sorted(distances, key=lambda x: distances[x])
 
-                    # On vérifie si la case voisine est vide et qu'il n'y a pas d'obstacle
-                    for direction in sorted_distances:
-                        new_i, new_j = i, j
-                        if direction == 'up':
-                            new_i -= 1
-                        elif direction == 'down':
-                            new_i += 1
-                        elif direction == 'left':
-                            new_j -= 1
-                        elif direction == 'right':
-                            new_j += 1
 
-                        if 0 <= new_i < height and 0 <= new_j < width and grid[new_i, new_j] == EMPTY:
-                            new_grid[i, j] = EMPTY
-                            new_grid[new_i, new_j] = PERSON
-                            break
+                    # On vérifie si la case voisine est vide et qu'il n'y a pas d'obstacle
+                    if PERSON != OBSTACLE :
+                        for direction in sorted_distances:
+                            new_i, new_j = i, j
+                            if direction == 'up':
+                                new_i -= 1
+                            elif direction == 'down':
+                                new_i += 1
+                            elif direction == 'left':
+                                new_j -= 1
+                            elif direction == 'right':
+                                new_j += 1
+
+                            if  0 <= new_i < height and 0 <= new_j < width and grid[new_i, new_j] == EMPTY :
+                                new_grid[i, j] = EMPTY
+                                new_grid[new_i, new_j] = PERSON
+                                break
+                            elif grid[new_i,new_j]==OBSTACLE:
+                                print("t")
+                            elif grid[new_i, new_j] == PERSON:
+                                #grid[new_i,new_j] = grid[new_i, new_j]/(grid[new_i, new_j]+ new_grid[i, j])
+                                new_grid[i, j] =OBSTACLE
+                            else :
+
+                                new_grid[i, j] = EMPTY
+                                nb = nb-1
+
+                                break
+
+
+
+
+
+
+
+
+
 
     return new_grid, person_exited
 
@@ -129,8 +149,9 @@ def update_simulation():
 
     canvas.delete("all")
     draw_grid(canvas, grid),
-    grid, person_exited = move_person(grid, (0, 0), exit_position)
-    root.after(500, update_simulation)  # Appelle cette fonction après 500 ms pour créer une animation
+    grid, person_exited = move_person(grid,  exit_position)
+    root.after(1000, update_simulation)
+
 
 # Création de la fenêtre tkinter
 root = tk.Tk()
